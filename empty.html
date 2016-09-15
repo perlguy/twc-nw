@@ -521,7 +521,19 @@ noscript {display:none;} /* Fixes a feature in Firefox 1.5.0.2 where print previ
 </div>
 <!--POST-SHADOWAREA-->
 <div id="storeArea">
-
+<div title="NodeWebkitExternalLinksPlugin" creator="YourName" modifier="YourName" created="201609152016" modified="201609152019" tags="systemConfig" changecount="3">
+<pre>try {
+    var gui = require('nw.gui');
+    var win = gui.Window.get();
+    win.on('new-win-policy', function (frame, url, policy) {
+        gui.Shell.openExternal(url);
+        policy.ignore();
+    });
+  } catch(e) { }</pre>
+</div>
+<div title="NodeWebkitExternalLinksTest" creator="YourName" modifier="YourName" created="201609152017" modified="201609152019" changecount="3">
+<pre>http://www.google.com/</pre>
+</div>
 </div>
 <!--POST-STOREAREA-->
 <!--POST-BODY-START-->
