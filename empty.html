@@ -46,9 +46,7 @@ DAMAGE.
 <!--}}}-->
 
 <!--PRE-HEAD-END-->
-<title>
-
-</title>
+<title> My TiddlyWiki - a reusable non-linear personal web notebook </title>
 <style id="styleArea" type="text/css">
 #saveTest {display:none;}
 #messageArea {display:none;}
@@ -522,7 +520,9 @@ noscript {display:none;} /* Fixes a feature in Firefox 1.5.0.2 where print previ
 
 </div>
 <!--POST-SHADOWAREA-->
-<div id="storeArea"></div>
+<div id="storeArea">
+
+</div>
 <!--POST-STOREAREA-->
 <!--POST-BODY-START-->
 
@@ -1275,10 +1275,20 @@ window.allowSave = window.allowSave || function(l)
 	return true;
 }
 
+window.isNodeWebkit = function()
+{
+        return (typeof nw !== 'undefined' && nw.process.versions["nw"] !== 'undefined') ? true : false;
+}
+
+window.isNwLocal = function()
+{
+        return ( isNodeWebkit() && nw.App.manifest.main.substr(0,5) == "file:" );
+}
+
 // Whether this file is being viewed locally
 window.isLocal = function()
 {
-	return (document.location.protocol == "file:");
+	return (document.location.protocol == "file:" || window.isNwLocal() );
 }
 
 // Whether to use the JavaSaver applet
@@ -6290,6 +6300,7 @@ function onSystemSettingsChange()
 	}
 }
 
+
 function saveOption(name)
 {
 	if(safeMode)
@@ -6644,6 +6655,12 @@ function recreateOriginal()
 	return content;
 }
 
+function getOriginalPath()
+{
+        if (isNwLocal()) { return nw.App.manifest.main; }
+        return document.location.toString();
+}
+
 // Save this tiddlywiki with the pending changes
 function saveChanges(onlyIfDirty,tiddlers)
 {
@@ -6652,7 +6669,7 @@ function saveChanges(onlyIfDirty,tiddlers)
 	clearMessage();
 	var t0 = new Date();
 	var msg = config.messages;
-	var originalPath = document.location.toString();
+	var originalPath = getOriginalPath();
 	if(!window.allowSave()) {
 		alert(msg.notFileUrlError);
 		if(store.tiddlerExists(msg.saveInstructions))
@@ -6761,8 +6778,10 @@ window.getLocalPath = window.getLocalPath || function(origPath)
 		originalPath = "file://" + originalPath.substr(16);
 	// Convert to a native file format
 	var localPath;
-	if(originalPath.charAt(9) == ":") // pc local file
+	if(originalPath.charAt(9) == ":") // pc local file - file:///x:/ variant
 		localPath = unescape(originalPath.substr(8)).replace(new RegExp("/","g"),"\\");
+	else if(originalPath.charAt(8) == ":") // pc local file - file ://x:/variant
+		localPath = unescape(originalPath.substr(7)).replace(new RegExp("/","g"),"\\");
 	else if(originalPath.indexOf("file://///") == 0) // FireFox pc network file
 		localPath = "\\\\" + unescape(originalPath.substr(10)).replace(new RegExp("/","g"),"\\");
 	else if(originalPath.indexOf("file:///") == 0) // mac/unix local file
@@ -6865,6 +6884,8 @@ window.copyFile = window.copyFile || function(dest,source)
 window.saveFile = window.saveFile || function(fileUrl,content)
 {
 	var r = mozillaSaveFile(fileUrl,content);
+        if(!r)
+                r = nwSaveFile(fileUrl,content);
 	if(!r)
 		r = ieSaveFile(fileUrl,content);
 	if(!r)
@@ -6880,6 +6901,8 @@ window.saveFile = window.saveFile || function(fileUrl,content)
 window.loadFile = window.loadFile || function(fileUrl)
 {
 	var r = mozillaLoadFile(fileUrl);
+	if((r == null) || (r == false))
+		r = nwLoadFile(fileUrl);
 	if((r == null) || (r == false))
 		r = ieLoadFile(fileUrl);
 	if((r == null) || (r == false))
@@ -6955,6 +6978,23 @@ function ieCopyFile(dest,source)
 		return false;
 	}
 	return true;
+}
+
+// node-webkit save/load
+function nwSaveFile(filePath,content)
+{
+        if (!window.isNwLocal()) { return null; }
+        var fs = require('fs');
+        fs.writeFileSync(filePath,content);
+        return true;
+}
+
+function nwLoadFile(filePath,content)
+{
+        if (!window.isNwLocal()) { return null; }
+        var fs = require('fs');
+        var content = fs.readFileSync(filePath,"utf8");
+        return content;
 }
 
 // Returns null if it can't do it, false if there's an error, true if it saved OK
