@@ -1,0 +1,7 @@
+{
+  "main": "empty.html",
+  "name": "TiddlyWiki-NW-devel",
+  "nodejs": true,
+  "node-remote": "<all_urls>"
+}
+
